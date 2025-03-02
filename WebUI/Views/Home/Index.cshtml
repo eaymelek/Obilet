@@ -1,0 +1,191 @@
+﻿@model WebUI.Models.BusLocationModel
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    @if (!string.IsNullOrEmpty(Model.AlertMessage))
+    {
+        <div class="alert alert-danger">
+            @Model.AlertMessage
+        </div>
+    }
+</div>
+
+<div class="container d-flex justify-content-center mt-4">
+    <div class="card w-100" style="max-width: 320px;">
+        <div class="card-header bg-primary text-white text-center"></div>
+        <div class="card-body">
+            <form id="journeyForm" asp-action="JourneyIndex" method="post">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nereden</label>
+                    <div class="input-group">
+                        <span class="input-group-text">📍</span>
+                        <select asp-for="OriginId"
+                                asp-items="@(new SelectList(Model.LocationData, "Id", "Name"))"
+                                class="selectpicker" data-live-search="true" id="originSelect"></select>
+                    </div>
+                </div>
+                <button type="button" class="swap-btn btn btn-light border rounded-circle p-2 shadow position-absolute" onclick="swapLocations()">
+                    <i class="fa-solid fa-arrows-up-down"></i>
+                </button>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nereye</label>
+                    <div class="input-group">
+                        <span class="input-group-text">📍</span>
+                        <select asp-for="DestinationId"
+                                asp-items="@(new SelectList(Model.LocationData, "Id", "Name"))"
+                                class="selectpicker" data-live-search="true" id="destinationSelect"></select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tarih</label>
+                    <div class="input-group">
+                        <span class="input-group-text">📅</span>
+                        <input type="text" class="date form-control" id="dateSelect" readonly name="Date">
+                    </div>
+                    <div class="d-flex mt-2">
+                        <button type="button" class="btn btn-secondary btn-sm me-2">Bugün</button>
+                        <button type="button" class="btn btn-light btn-sm">Yarın</button>
+                    </div>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Bileti Bul</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+         $(document).ready(function () {
+            $('.selectpicker').selectpicker();
+
+            var date = new Date();
+            date.setDate(date.getDate()+1);
+            var formattedDate = date.toLocaleDateString('tr-TR');
+            $("#dateSelect").val(formattedDate);
+        });
+
+         $("#dateSelect").datepicker({
+            format: 'dd.mm.yyyy',
+            autoclose: true,
+            todayHighlight: true
+         });
+
+         $("#dateSelect").datepicker().change(function (e) {
+            var selectedDate = $(this).datepicker('getDate'); // Seçilen tarihi al
+            var formattedSelectedDate = $.datepicker.formatDate('dd.mm.yy', selectedDate); // Tarihi 'dd.MM.yy' formatında al
+            $("#dateSelect").val(formattedSelectedDate); 
+        });
+
+        $('.btn-secondary').click(function () {
+            var today = new Date();
+            var formattedDate = today.toLocaleDateString('tr-TR');
+            $("#dateSelect").val(formattedDate);
+        });
+
+        $('.btn-light').click(function () {
+            var tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            var formattedDate = tomorrow.toLocaleDateString('tr-TR');
+            $("#dateSelect").val(formattedDate);
+        });
+
+        function swapLocations() {
+            var originSelect = $("#originSelect");
+            var destinationSelect = $("#destinationSelect");
+
+            var tempValue = originSelect.val();
+            originSelect.val(destinationSelect.val());
+            destinationSelect.val(tempValue);
+
+            originSelect.selectpicker("refresh");
+            destinationSelect.selectpicker("refresh");
+        }
+
+    const sessionIdKey = 'sessionId';
+
+    if (!localStorage.getItem(sessionIdKey)) {
+        const newSessionId = generateSessionId();
+        localStorage.setItem(sessionIdKey, newSessionId);
+    }
+
+    const sessionId = localStorage.getItem(sessionIdKey);
+
+    function saveJourneyData(origion, destination, date) {
+        const userKey = `journey-${sessionId}`;
+        const journeyData = { origion, destination, date };
+        localStorage.setItem(userKey, JSON.stringify(journeyData));
+    }
+
+    function getJourneyData() {
+        const userKey = `journey-${sessionId}`;
+        const journeyData = localStorage.getItem(userKey);
+
+        if (journeyData) {
+            return JSON.parse(journeyData);
+        } else {
+            return null;
+        }
+    }
+
+    function clearJourneyData() {
+        const userKey = `journey-${sessionId}`;
+        localStorage.removeItem(userKey);
+    }
+
+    window.onload = function () {
+        const userKey = `journey-${sessionId}`;
+        let storedJourneyData = localStorage.getItem(userKey);
+
+        if (storedJourneyData) {
+            storedJourneyData = JSON.parse(storedJourneyData);
+
+            var originSelect = $("#originSelect");
+            var destinationSelect = $("#destinationSelect");
+            var dateSelect = $("#dateSelect");
+
+            originSelect.val(storedJourneyData.origion);
+            destinationSelect.val(storedJourneyData.destination);
+            dateSelect.val(storedJourneyData.date);
+
+            originSelect.selectpicker("refresh");
+            destinationSelect.selectpicker("refresh");
+        }
+
+        window.addEventListener('storage', function (event) {
+            if (event.key === `journey-${sessionId}`) {
+                const updatedJourneyData = JSON.parse(event.newValue);
+
+                var originSelect = $("#originSelect");
+                var destinationSelect = $("#destinationSelect");
+                var dateSelect = $("#dateSelect");
+
+                originSelect.val(updatedJourneyData.origion);
+                destinationSelect.val(updatedJourneyData.destination);
+                dateSelect.val(updatedJourneyData.date);
+
+                originSelect.selectpicker("refresh");
+                destinationSelect.selectpicker("refresh");
+            }
+        });
+    };
+
+    function generateSessionId() {
+        return 'session-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    document.getElementById('journeyForm').addEventListener('submit', function (event) {
+        const origion = document.getElementById('originSelect').value;
+        const destination = document.getElementById('destinationSelect').value;
+        const date = document.getElementById('dateSelect').value;
+
+        const userKey = `journey-${sessionId}`;
+        const journeyData = { origion, destination, date };
+
+       localStorage.setItem(userKey, JSON.stringify(journeyData));
+    });
+
+</script>

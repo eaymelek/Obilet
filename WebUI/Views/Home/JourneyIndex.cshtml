@@ -1,0 +1,50 @@
+﻿@model WebUI.Models.BusJourneyModel
+@{
+    ViewData["Title"] = "JourneyIndex";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-3">
+    @if (!string.IsNullOrEmpty(Model.AlertMessage))
+    {
+        <div class="alert alert-danger">
+            @Model.AlertMessage
+        </div>
+    }
+    <div class="card bg-primary text-white text-center p-3">
+        <div class="row align-items-center">
+            <div class="col-1 text-start">
+                <a href="@Url.Action("Index", "Home")" class="btn btn-link p-0">
+                    <i class="bi bi-arrow-left" style="font-size: 20px; color: white;"></i>
+                </a>
+            </div>
+            <div class="col-11 text-center">
+                <h4 class="m-0">@Model.JourneyData?.FirstOrDefault()?.OriginLocation</h4>
+            </div>
+        </div>
+        <div class="row align-items-center">
+            <div class="col-1 text-start"></div>
+            <div class="col-11 text-center">
+                <p>@Model.JourneyData?.FirstOrDefault()?.Journey.Departure.ToString("dd MMMM yyyy")</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-3">
+        @if (Model?.JourneyData != null && Model.JourneyData.Any())
+        {
+            @foreach (var journey in Model.JourneyData.OrderBy(x=>x.Journey.Departure))
+            {
+                <div class="trip-card d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 text-primary fw-bold">KALKIŞ <span class="text-dark">@journey.Journey.Departure.ToString("HH:mm")</span> → VARIŞ <span class="text-dark">@journey.Journey.Arrival.ToString("HH:mm")</span></p>
+                        <p class="mb-0">@journey.OriginLocation - @journey.DestinationLocation</p>
+                    </div>
+                    <div class="price-tag">@journey.Journey.InternetPrice.ToString("F2") TL</div>
+                </div>
+            }
+        }
+    </div>
+
+</div> 
